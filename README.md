@@ -6,6 +6,7 @@ A WhatsApp desktop application for Linux built with [Tauri](https://tauri.app/).
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](.github/CODE_OF_CONDUCT.md)
 [![CodeQL](https://github.com/vascoguita/whatsapp-desktop/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/vascoguita/whatsapp-desktop/actions/workflows/github-code-scanning/codeql)
 [![Dependabot](https://github.com/vascoguita/whatsapp-desktop/actions/workflows/dependabot/dependabot-updates/badge.svg)](https://github.com/vascoguita/whatsapp-desktop/actions/workflows/dependabot/dependabot-updates/badge.svg)
+[![Build](https://github.com/vascoguita/whatsapp-desktop/actions/workflows/build.yml/badge.svg)](https://github.com/vascoguita/whatsapp-desktop/actions/workflows/build.yml)
 
 ![WhatsApp Desktop banner](https://repository-images.githubusercontent.com/1329120698/ea383df6-3eba-43f5-bbe1-b81272d91cd7)
 
