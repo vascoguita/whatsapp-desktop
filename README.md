@@ -10,6 +10,37 @@ A WhatsApp desktop application for Linux built with [Tauri](https://tauri.app/).
 
 ![WhatsApp Desktop banner](https://repository-images.githubusercontent.com/1329120698/ea383df6-3eba-43f5-bbe1-b81272d91cd7)
 
+## Installation
+
+### Debian / Ubuntu (APT)
+
+1. Add repository:
+```bash
+echo "deb [trusted=yes] https://apt.fury.io/vascoguita/ /" | sudo tee /etc/apt/sources.list.d/whatsapp-desktop.list
+sudo apt update
+```
+
+2. Install:
+```bash
+sudo apt install whatsapp-desktop
+```
+
+### Fedora / RHEL (YUM)
+
+1. Add repository:
+```bash
+echo "[fury]
+name=WhatsApp Desktop Repository
+baseurl=https://yum.fury.io/vascoguita/
+enabled=1
+gpgcheck=0" | sudo tee /etc/yum.repos.d/whatsapp-desktop.repo
+```
+
+2. Install:
+```bash
+sudo yum install whatsapp-desktop
+```
+
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
