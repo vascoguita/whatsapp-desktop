@@ -1,0 +1,14 @@
+{
+  "packages": {
+    ".": {
+      "release-type": "rust",
+      "extra-files": [
+        {
+          "type": "json",
+          "path": "tauri.conf.json",
+          "jsonpath": "$.version"
+        }
+      ]
+    }
+  }
+}
