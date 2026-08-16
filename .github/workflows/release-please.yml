@@ -13,5 +13,10 @@ jobs:
   release-please:
     runs-on: ubuntu-latest
     steps:
-      - uses: googleapis/release-please-action@v4
+      - uses: googleapis/release-please-action@v5
         id: release
+        with:
+          # A Personal Access Token (PAT) is required here instead of the default GITHUB_TOKEN
+          # because the default token CANNOT trigger other workflows. We need the build.yml
+          # workflow to trigger when release-please creates a new tag.
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
