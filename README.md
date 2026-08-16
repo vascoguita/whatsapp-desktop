@@ -22,7 +22,7 @@ sudo apt update
 
 2. Install:
 ```bash
-sudo apt install whatsapp-desktop
+sudo apt install whats-app-desktop
 ```
 
 ### Fedora / RHEL (YUM)
@@ -38,7 +38,7 @@ gpgcheck=0" | sudo tee /etc/yum.repos.d/whatsapp-desktop.repo
 
 2. Install:
 ```bash
-sudo yum install whatsapp-desktop
+sudo yum install whats-app-desktop
 ```
 
 ## License
