@@ -32,6 +32,7 @@ jobs:
           GEMFURY_TOKEN: ${{ secrets.GEMFURY_TOKEN }}
           GEMFURY_USERNAME: ${{ secrets.GEMFURY_USERNAME }}
         run: |
-          for file in src-tauri/target/release/bundle/{deb/*.deb,rpm/*.rpm}; do
+          shopt -s nullglob
+          for file in target/release/bundle/{deb/*.deb,rpm/*.rpm}; do
             curl -fsS -F package=@"$file" https://${GEMFURY_TOKEN}@push.fury.io/${GEMFURY_USERNAME}/
           done
