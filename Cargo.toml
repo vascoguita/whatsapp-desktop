@@ -1,6 +1,6 @@
 [package]
 name = "whatsapp-desktop"
-version = "0.1.0"
+version = "0.2.0"
 description = "WhatsApp Desktop for Linux"
 authors = ["Vasco Guita <vasco@guita.org>"]
 license = "MIT"
