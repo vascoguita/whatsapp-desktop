@@ -28,7 +28,18 @@ fn build_tray(app: &tauri::AppHandle) -> tauri::Result<TrayIcon> {
                     let _ = w.set_focus();
                 }
             }
-            "quit" => app.exit(0),
+            "quit" => {
+                // Save window state before exiting so position/size is
+                // captured while the window is still open.
+                let window_state_enabled = app
+                    .try_state::<WindowStateEnabled>()
+                    .map(|s| *s.lock().unwrap())
+                    .unwrap_or(false);
+                if window_state_enabled {
+                    let _ = app.save_window_state(StateFlags::all());
+                }
+                app.exit(0);
+            }
             _ => {}
         })
         .build(app)
@@ -149,18 +160,21 @@ pub fn run() {
                     .and_then(|t| t.lock().unwrap().as_ref().map(|(_, visible)| *visible))
                     .unwrap_or(false);
 
-                if tray_visible {
-                    api.prevent_close();
-                    let _ = window.hide();
-                }
-
                 let window_state_enabled = app_handle
                     .try_state::<WindowStateEnabled>()
                     .map(|s| *s.lock().unwrap())
                     .unwrap_or(false);
 
+                // Save BEFORE hiding: a hidden window reports wrong
+                // position (e.g. center-screen), so we must capture
+                // size/position while it is still visible.
                 if window_state_enabled {
                     let _ = app_handle.save_window_state(StateFlags::all());
+                }
+
+                if tray_visible {
+                    api.prevent_close();
+                    let _ = window.hide();
                 }
             }
         })
