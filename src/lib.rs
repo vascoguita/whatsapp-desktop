@@ -93,15 +93,9 @@ pub fn run() {
 
             Ok(())
         })
-        .build(tauri::generate_context!())
-        .expect("error while running tauri application")
-        .run(|app_handle, event| {
-            if let tauri::RunEvent::WindowEvent {
-                label,
-                event: tauri::WindowEvent::CloseRequested { api, .. },
-                ..
-            } = event
-            {
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                let app_handle = window.app_handle();
                 let tray_visible = app_handle
                     .try_state::<TrayState>()
                     .and_then(|t| t.lock().unwrap().as_ref().map(|(_, visible)| *visible))
@@ -109,10 +103,11 @@ pub fn run() {
 
                 if tray_visible {
                     api.prevent_close();
-                    if let Some(w) = app_handle.get_webview_window(&label) {
-                        let _ = w.hide();
-                    }
+                    let _ = window.hide();
                 }
             }
-        });
+        })
+        .build(tauri::generate_context!())
+        .expect("error while running tauri application")
+        .run(|_app_handle, _event| {});
 }
