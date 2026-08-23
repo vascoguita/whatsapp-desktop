@@ -1,6 +1,5 @@
-export APP_METADATA_JSON := $(shell cargo metadata --format-version=1 --no-deps)
-APP_NAME = $(shell echo "$$APP_METADATA_JSON" | jq -r '.packages[0].name')
-APP_VERSION = $(shell echo "$$APP_METADATA_JSON" | jq -r '.packages[0].version')
+APP_NAME = $(shell cargo metadata --format-version=1 --no-deps | jq -r '.packages[0].name')
+APP_VERSION = $(shell cargo metadata --format-version=1 --no-deps | jq -r '.packages[0].version')
 PRODUCT_NAME = $(shell jq -r '.productName' tauri.conf.json | sed 's/ /\\ /g')
 BUNDLE_DIR = target/release/bundle
 ARCH_DIR = $(BUNDLE_DIR)/arch/$(APP_NAME)-$(APP_VERSION)-1-x86_64
@@ -21,7 +20,7 @@ arch-bundle: $(ARCH_BUNDLE)
 $(ARCH_BUNDLE): $(DEB_BUNDLE)
 	mkdir -p $(ARCH_DIR)
 	cp packaging/arch/whatsapp-desktop.install $(ARCH_DIR)/
-	echo "$$APP_METADATA_JSON" | jq -r -f packaging/arch/PKGBUILD.jq > $(ARCH_DIR)/PKGBUILD
+	cargo metadata --format-version=1 --no-deps | jq -r -f packaging/arch/PKGBUILD.jq > $(ARCH_DIR)/PKGBUILD
 	cd $(ARCH_DIR) && PKGDEST=.. makepkg --nodeps -f
 
 .PHONY: clean
