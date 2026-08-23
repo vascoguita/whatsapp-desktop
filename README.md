@@ -56,6 +56,18 @@ sudo pacman -Syu
 sudo pacman -S whatsapp-desktop
 ```
 
+### AppImage (Universal)
+
+1. Download:
+
+Download the `.AppImage` file from the [latest GitHub Release](https://github.com/vascoguita/whatsapp-desktop/releases/latest).
+
+2. Run:
+```bash
+chmod +x WhatsApp\ Desktop_*_amd64.AppImage
+./WhatsApp\ Desktop_*_amd64.AppImage
+```
+
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
