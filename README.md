@@ -41,6 +41,21 @@ gpgcheck=0" | sudo tee /etc/yum.repos.d/whatsapp-desktop.repo
 sudo yum install whats-app-desktop
 ```
 
+### Arch Linux (Pacman)
+
+1. Add repository:
+```bash
+echo "[fury]
+SigLevel = Optional
+Server = https://pacman.fury.io/vascoguita/\$arch" | sudo tee -a /etc/pacman.conf
+sudo pacman -Syu
+```
+
+2. Install:
+```bash
+sudo pacman -S whatsapp-desktop
+```
+
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
