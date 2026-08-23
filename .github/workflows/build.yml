@@ -31,12 +31,12 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: linux-x86_64-arch
-          path: target/release/bundle/arch/*.pkg.tar.gz
+          path: target/release/bundle/arch/*.pkg.tar.zst
       - name: Upload Arch Package to GitHub Release
         uses: softprops/action-gh-release@v3
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: target/release/bundle/arch/*.pkg.tar.gz
+          files: target/release/bundle/arch/*.pkg.tar.zst
       - name: Publish to Gemfury
         if: startsWith(github.ref, 'refs/tags/')
         env:
@@ -44,6 +44,6 @@ jobs:
           GEMFURY_USERNAME: ${{ secrets.GEMFURY_USERNAME }}
         run: |
           shopt -s nullglob
-          for file in target/release/bundle/{deb/*.deb,rpm/*.rpm,arch/*.tar.gz}; do
+          for file in target/release/bundle/{deb/*.deb,rpm/*.rpm,arch/*.pkg.tar.zst}; do
             curl -fsS -F package=@"$file" https://${GEMFURY_TOKEN}@push.fury.io/${GEMFURY_USERNAME}/
           done
