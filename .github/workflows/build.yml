@@ -12,7 +12,7 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf xdg-utils
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf xdg-utils pacman-package-manager libarchive-tools
       - name: Check formatting
         run: cargo fmt --all -- --check
       - name: Lint
@@ -25,7 +25,18 @@ jobs:
           tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || '' }}
           releaseName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || '' }}
           uploadWorkflowArtifacts: true
-
+      - name: Build Arch Linux Package
+        run: make arch-bundle
+      - name: Upload Arch Linux Package
+        uses: actions/upload-artifact@v7
+        with:
+          name: linux-x86_64-arch
+          path: target/release/bundle/arch/*.pkg.tar.gz
+      - name: Upload Arch Package to GitHub Release
+        uses: softprops/action-gh-release@v3
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: target/release/bundle/arch/*.pkg.tar.gz
       - name: Publish to Gemfury
         if: startsWith(github.ref, 'refs/tags/')
         env:
@@ -33,6 +44,6 @@ jobs:
           GEMFURY_USERNAME: ${{ secrets.GEMFURY_USERNAME }}
         run: |
           shopt -s nullglob
-          for file in target/release/bundle/{deb/*.deb,rpm/*.rpm}; do
+          for file in target/release/bundle/{deb/*.deb,rpm/*.rpm,arch/*.tar.gz}; do
             curl -fsS -F package=@"$file" https://${GEMFURY_TOKEN}@push.fury.io/${GEMFURY_USERNAME}/
           done
