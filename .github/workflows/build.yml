@@ -45,5 +45,9 @@ jobs:
         run: |
           shopt -s nullglob
           for file in target/release/bundle/{deb/*.deb,rpm/*.rpm,arch/*.pkg.tar.zst}; do
-            curl -fsS -F package=@"$file" https://${GEMFURY_TOKEN}@push.fury.io/${GEMFURY_USERNAME}/
+            sanitized="${file// /-}"
+            if [ "$file" != "$sanitized" ]; then
+              mv "$file" "$sanitized"
+            fi
+            curl -fsS -F package=@"$sanitized" https://${GEMFURY_TOKEN}@push.fury.io/${GEMFURY_USERNAME}/
           done
