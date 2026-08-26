@@ -51,3 +51,17 @@ jobs:
             fi
             curl -fsS -F package=@"$sanitized" https://${GEMFURY_TOKEN}@push.fury.io/${GEMFURY_USERNAME}/
           done
+      - name: Prune Old Packages from Gemfury
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GEMFURY_TOKEN: ${{ secrets.GEMFURY_TOKEN }}
+        run: |
+          sudo gem install gemfury
+          CURRENT_VERSION="${GITHUB_REF_NAME#v}"
+          for package in whatsapp-desktop; do
+            fury versions $package --api-token=$GEMFURY_TOKEN -q | awk '{print $1}' | while read version; do
+              if [ -n "$version" ] && [ "$version" != "$CURRENT_VERSION" ]; then
+                fury yank $package -v "$version" --api-token=$GEMFURY_TOKEN -q || true
+              fi
+            done
+          done
