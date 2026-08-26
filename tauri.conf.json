@@ -13,6 +13,33 @@
   "bundle": {
     "active": true,
     "targets": ["deb", "appimage", "rpm"],
-    "icon": ["icons/icon.png"]
+    "icon": ["icons/icon.png"],
+    "linux": {
+      "deb": {
+        "depends": [
+          "libwebkit2gtk-4.1-0",
+          "libgtk-3-0",
+          "libayatana-appindicator3-1",
+          "gstreamer1.0-plugins-good",
+          "gstreamer1.0-plugins-bad",
+          "gstreamer1.0-plugins-ugly",
+          "gstreamer1.0-libav"
+        ]
+      },
+      "rpm": {
+        "depends": [
+          "webkit2gtk4.1",
+          "gtk3",
+          "libayatana-appindicator-gtk3",
+          "gstreamer1-plugins-good",
+          "gstreamer1-plugins-bad-free",
+          "gstreamer1-plugins-ugly-free",
+          "gstreamer1-libav"
+        ]
+      },
+      "appimage": {
+        "bundleMediaFramework": true
+      }
+    }
   }
 }

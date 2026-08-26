@@ -26,3 +26,4 @@ $(ARCH_BUNDLE): $(DEB_BUNDLE)
 .PHONY: clean
 clean:
 	cargo clean
+	rm -rf gen
