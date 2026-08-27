@@ -19,10 +19,8 @@ jobs:
         run: cargo clippy -- -D warnings
       - name: Install Tauri CLI
         run: cargo install tauri-cli --version "^2.11" --locked
-      - name: Build Tauri Packages
-        run: make bundles
-      - name: Build Arch Linux package
-        run: make arch-bundle
+      - name: Build Packages
+        run: make
       - name: Upload AppImage
         uses: actions/upload-artifact@v7
         with:

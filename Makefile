@@ -13,7 +13,7 @@ RPM_BUNDLE = $(BUNDLE_DIR)/rpm/$(PRODUCT_NAME_SAFE)-$(APP_VERSION)-1.x86_64.rpm
 APPIMAGE_BUNDLE = $(BUNDLE_DIR)/appimage/$(PRODUCT_NAME)_$(APP_VERSION)_amd64.AppImage
 
 .PHONY: all
-all: arch-bundle
+all: bundles arch-bundle
 
 .PHONY: bundles
 bundles: $(DEB_BUNDLE) $(RPM_BUNDLE) $(APPIMAGE_BUNDLE)
