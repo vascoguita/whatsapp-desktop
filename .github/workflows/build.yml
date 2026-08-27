@@ -63,4 +63,7 @@ jobs:
         run: |
           fury versions alpm:whatsapp-desktop --api-token=$GEMFURY_YANK_TOKEN \
             | awk -v cur="${GITHUB_REF_NAME#v}-1" '$1 ~ /^[0-9]/ && $1 != cur {print $1}' \
-            | xargs -r -I{} fury yank alpm:whatsapp-desktop -v {} --api-token=$GEMFURY_YANK_TOKEN -f || true
+            | while read -r version; do
+                [ -n "$version" ] || continue
+                fury yank alpm:whatsapp-desktop -v "$version" --api-token=$GEMFURY_YANK_TOKEN -f || true
+              done
