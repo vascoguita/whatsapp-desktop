@@ -25,43 +25,41 @@ jobs:
           tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || '' }}
           releaseName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || '' }}
           uploadWorkflowArtifacts: true
-      - name: Build Arch Linux Package
+      - name: Build Arch Linux package
         run: make arch-bundle
       - name: Upload Arch Linux Package
         uses: actions/upload-artifact@v7
         with:
           name: linux-x86_64-arch
           path: target/release/bundle/arch/*.pkg.tar.zst
-      - name: Upload Arch Package to GitHub Release
+      - name: Upload Arch package to GitHub Release
         uses: softprops/action-gh-release@v3
         if: startsWith(github.ref, 'refs/tags/')
         with:
           files: target/release/bundle/arch/*.pkg.tar.zst
+      - name: Install Fury CLI
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          echo "Types: deb
+          URIs: https://apt.fury.io/cli/
+          Suites: /
+          Trusted: yes" | sudo tee /etc/apt/sources.list.d/fury-cli.sources > /dev/null
+          sudo apt update
+          sudo apt install -y gemfury
       - name: Publish to Gemfury
         if: startsWith(github.ref, 'refs/tags/')
         env:
           GEMFURY_TOKEN: ${{ secrets.GEMFURY_TOKEN }}
-          GEMFURY_USERNAME: ${{ secrets.GEMFURY_USERNAME }}
         run: |
           shopt -s nullglob
           for file in target/release/bundle/{deb/*.deb,rpm/*.rpm,arch/*.pkg.tar.zst}; do
-            sanitized="${file// /-}"
-            if [ "$file" != "$sanitized" ]; then
-              mv "$file" "$sanitized"
-            fi
-            curl -fsS -F package=@"$sanitized" https://${GEMFURY_TOKEN}@push.fury.io/${GEMFURY_USERNAME}/
+            fury push "$file" --api-token="$GEMFURY_TOKEN" --public --quiet
           done
-      - name: Prune Old Packages from Gemfury
+      - name: Remove old Arch Linux packages from Gemfury
         if: startsWith(github.ref, 'refs/tags/')
         env:
           GEMFURY_TOKEN: ${{ secrets.GEMFURY_TOKEN }}
         run: |
-          sudo gem install gemfury
-          CURRENT_VERSION="${GITHUB_REF_NAME#v}"
-          for package in whatsapp-desktop; do
-            fury versions $package --api-token=$GEMFURY_TOKEN -q | awk '{print $1}' | while read version; do
-              if [ -n "$version" ] && [ "$version" != "$CURRENT_VERSION" ]; then
-                fury yank $package -v "$version" --api-token=$GEMFURY_TOKEN -q || true
-              fi
-            done
-          done
+          fury versions alpm:whatsapp-desktop --api-token=$GEMFURY_TOKEN \
+            | awk -v cur="${GITHUB_REF_NAME#v}-1" '$1 ~ /^[0-9]/ && $1 != cur {print $1}' \
+            | xargs -r -I{} fury yank alpm:whatsapp-desktop -v {} --api-token=$GEMFURY_TOKEN -f || true
