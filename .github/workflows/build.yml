@@ -46,7 +46,7 @@ jobs:
           Trusted: yes
           Signed-By: /dev/null" | sudo tee /etc/apt/sources.list.d/fury-cli.sources > /dev/null
           sudo apt-get update
-          sudo apt-get install -y gemfury
+          sudo apt-get install -y fury-cli
       - name: Publish to Gemfury
         if: startsWith(github.ref, 'refs/tags/')
         env:
