@@ -87,3 +87,10 @@ check our [Security Policy](.github/SECURITY.md).
 We welcome contributions! Before getting started, please read our
 [Contributing Guidelines](.github/CONTRIBUTING.md) for information on how to
 contribute to the project.
+
+## Acknowledgements
+
+- Dimitris Lampridis ([@gnulabis](https://github.com/gnulabis)) for testing
+  the releases on Arch Linux.
+- Jimil Desai ([@jimil749](https://github.com/jimil749)) for testing the
+  releases on Ubuntu.
