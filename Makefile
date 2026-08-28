@@ -10,10 +10,7 @@ RPM_BUNDLE = $(BUNDLE_DIR)/rpm/$(PRODUCT_NAME_SAFE)-$(APP_VERSION)-1.x86_64.rpm
 APPIMAGE_BUNDLE = $(BUNDLE_DIR)/appimage/$(PRODUCT_NAME)_$(APP_VERSION)_amd64.AppImage
 
 .PHONY: all
-all: bundles arch-bundle
-
-.PHONY: bundles
-bundles: $(DEB_BUNDLE) $(RPM_BUNDLE) $(APPIMAGE_BUNDLE)
+all: $(DEB_BUNDLE) $(RPM_BUNDLE) $(APPIMAGE_BUNDLE) $(ARCH_BUNDLE)
 
 $(DEB_BUNDLE):
 	cargo tauri build --bundles deb
@@ -24,9 +21,6 @@ $(RPM_BUNDLE):
 
 $(APPIMAGE_BUNDLE):
 	cargo tauri build --bundles appimage
-
-.PHONY: arch-bundle
-arch-bundle: $(ARCH_BUNDLE)
 
 $(ARCH_BUNDLE): $(DEB_BUNDLE)
 	mkdir -p $(ARCH_DIR)
