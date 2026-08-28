@@ -1,21 +1,26 @@
 APP_NAME = $(shell cargo metadata --format-version=1 --no-deps | jq -r '.packages[0].name')
 APP_VERSION = $(shell cargo metadata --format-version=1 --no-deps | jq -r '.packages[0].version')
 PRODUCT_NAME = $(shell jq -r '.productName' tauri.conf.json | sed 's/ /\\ /g')
+PRODUCT_NAME_SAFE = $(shell jq -r '.productName' tauri.conf.json | tr ' ' '-')
 BUNDLE_DIR = target/release/bundle
 ARCH_DIR = $(BUNDLE_DIR)/arch/$(APP_NAME)-$(APP_VERSION)-1-x86_64
 ARCH_BUNDLE = $(ARCH_DIR).pkg.tar.zst
 DEB_BUNDLE = $(BUNDLE_DIR)/deb/$(PRODUCT_NAME)_$(APP_VERSION)_amd64.deb
-RPM_BUNDLE = $(BUNDLE_DIR)/rpm/$(PRODUCT_NAME)-$(APP_VERSION)-1.x86_64.rpm
-APPIMAGE_BUNDLE = $(BUNDLE_DIR)/appimage/$(PRODUCT_NAME)_$(APP_VERSION)_amd64.AppImage 
+RPM_BUNDLE = $(BUNDLE_DIR)/rpm/$(PRODUCT_NAME_SAFE)-$(APP_VERSION)-1.x86_64.rpm
+APPIMAGE_BUNDLE = $(BUNDLE_DIR)/appimage/$(PRODUCT_NAME)_$(APP_VERSION)_amd64.AppImage
 
 .PHONY: all
-all: arch-bundle
+all: $(DEB_BUNDLE) $(RPM_BUNDLE) $(APPIMAGE_BUNDLE) $(ARCH_BUNDLE)
 
-$(DEB_BUNDLE) $(RPM_BUNDLE) $(APPIMAGE_BUNDLE):
-	cargo tauri build
+$(DEB_BUNDLE):
+	cargo tauri build --bundles deb
 
-.PHONY: arch-bundle
-arch-bundle: $(ARCH_BUNDLE)
+$(RPM_BUNDLE):
+	cargo tauri build --bundles rpm
+	mv $(BUNDLE_DIR)/rpm/$(PRODUCT_NAME)-$(APP_VERSION)-1.x86_64.rpm "$@"
+
+$(APPIMAGE_BUNDLE):
+	cargo tauri build --bundles appimage
 
 $(ARCH_BUNDLE): $(DEB_BUNDLE)
 	mkdir -p $(ARCH_DIR)
