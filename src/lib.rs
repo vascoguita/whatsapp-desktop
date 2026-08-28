@@ -1,10 +1,57 @@
 use tauri::{
     menu::{CheckMenuItem, Menu, MenuItem, SubmenuBuilder},
     tray::TrayIconBuilder,
-    AppHandle, Manager, Wry,
+    AppHandle, Manager, WebviewUrl, WebviewWindowBuilder, Wry,
 };
 use tauri_plugin_autostart::ManagerExt;
 use tauri_plugin_store::StoreExt;
+
+// WebKitGTK has a long-standing bug (https://bugs.webkit.org/show_bug.cgi?id=218519,
+// still reproducible on this system's WebKitGTK version despite the upstream fix)
+// where a `paste` event's `clipboardData.items` comes back empty for image content,
+// even though the image is genuinely on the clipboard. When that happens, read the
+// image directly from the OS clipboard via tauri-plugin-clipboard-manager (which
+// bypasses WebKit's broken JS-facing clipboard reader) and re-dispatch a `paste`
+// event carrying the real data.
+const CLIPBOARD_IMAGE_PASTE_FALLBACK_SCRIPT: &str = r#"
+(function () {
+  document.addEventListener(
+    "paste",
+    function (event) {
+      if (event.clipboardData && event.clipboardData.items && event.clipboardData.items.length > 0) {
+        return;
+      }
+      var invoke = window.__TAURI_INTERNALS__.invoke;
+      invoke("plugin:clipboard-manager|read_image")
+        .then(function (rid) {
+          return Promise.all([invoke("plugin:image|rgba", { rid: rid }), invoke("plugin:image|size", { rid: rid })]);
+        })
+        .then(function (results) {
+          var canvas = document.createElement("canvas");
+          canvas.width = results[1].width;
+          canvas.height = results[1].height;
+          canvas
+            .getContext("2d")
+            .putImageData(new ImageData(new Uint8ClampedArray(results[0]), results[1].width, results[1].height), 0, 0);
+          canvas.toBlob(function (blob) {
+            if (!blob) {
+              return;
+            }
+            var dataTransfer = new DataTransfer();
+            dataTransfer.items.add(new File([blob], "pasted-image.png", { type: "image/png" }));
+            (event.target || document.activeElement || document.body).dispatchEvent(
+              new ClipboardEvent("paste", { clipboardData: dataTransfer, bubbles: true, cancelable: true })
+            );
+          }, "image/png");
+        })
+        .catch(function () {
+          // No image on the clipboard (or reading it failed) - nothing to do.
+        });
+    },
+    true
+  );
+})();
+"#;
 
 #[derive(Clone)]
 struct MenuItems {
@@ -187,9 +234,19 @@ pub fn run() {
             Some(vec!["--autostart"]),
         ))
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_store::Builder::new().build())
         .setup(|app| {
             let handle = app.handle();
+
+            WebviewWindowBuilder::new(
+                handle,
+                "main",
+                WebviewUrl::External("https://web.whatsapp.com".parse().unwrap()),
+            )
+            .title("WhatsApp Desktop")
+            .initialization_script(CLIPBOARD_IMAGE_PASTE_FALLBACK_SCRIPT)
+            .build()?;
 
             setup_tray(handle)?;
             setup_menu(handle)?;

@@ -3,12 +3,7 @@
   "productName": "WhatsApp Desktop",
   "identifier": "org.guita.whatsapp-desktop",
   "app": {
-    "windows": [
-      {
-        "title": "WhatsApp Desktop",
-        "url": "https://web.whatsapp.com"
-      }
-    ]
+    "windows": []
   },
   "bundle": {
     "active": true,
