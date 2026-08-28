@@ -4444,7 +4444,7 @@ dependencies = [
 
 [[package]]
 name = "whatsapp-desktop"
-version = "0.3.8"
+version = "0.3.9"
 dependencies = [
  "tauri",
  "tauri-build",
