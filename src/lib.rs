@@ -1,232 +1,18 @@
-use tauri::{
-    menu::{CheckMenuItem, Menu, MenuItem, SubmenuBuilder},
-    tray::TrayIconBuilder,
-    AppHandle, Manager, WebviewUrl, WebviewWindowBuilder, Wry,
-};
+use tauri::{Manager, WebviewUrl, WebviewWindowBuilder, WindowEvent};
 use tauri_plugin_autostart::ManagerExt;
-use tauri_plugin_store::StoreExt;
 
-// WebKitGTK has a long-standing bug (https://bugs.webkit.org/show_bug.cgi?id=218519,
-// still reproducible on this system's WebKitGTK version despite the upstream fix)
-// where a `paste` event's `clipboardData.items` comes back empty for image content,
-// even though the image is genuinely on the clipboard. When that happens, read the
-// image directly from the OS clipboard via tauri-plugin-clipboard-manager (which
-// bypasses WebKit's broken JS-facing clipboard reader) and re-dispatch a `paste`
-// event carrying the real data.
-const CLIPBOARD_IMAGE_PASTE_FALLBACK_SCRIPT: &str = r#"
-(function () {
-  document.addEventListener(
-    "paste",
-    function (event) {
-      if (event.clipboardData && event.clipboardData.items && event.clipboardData.items.length > 0) {
-        return;
-      }
-      var invoke = window.__TAURI_INTERNALS__.invoke;
-      invoke("plugin:clipboard-manager|read_image")
-        .then(function (rid) {
-          return Promise.all([invoke("plugin:image|rgba", { rid: rid }), invoke("plugin:image|size", { rid: rid })]);
-        })
-        .then(function (results) {
-          var canvas = document.createElement("canvas");
-          canvas.width = results[1].width;
-          canvas.height = results[1].height;
-          canvas
-            .getContext("2d")
-            .putImageData(new ImageData(new Uint8ClampedArray(results[0]), results[1].width, results[1].height), 0, 0);
-          canvas.toBlob(function (blob) {
-            if (!blob) {
-              return;
-            }
-            var dataTransfer = new DataTransfer();
-            dataTransfer.items.add(new File([blob], "pasted-image.png", { type: "image/png" }));
-            (event.target || document.activeElement || document.body).dispatchEvent(
-              new ClipboardEvent("paste", { clipboardData: dataTransfer, bubbles: true, cancelable: true })
-            );
-          }, "image/png");
-        })
-        .catch(function () {
-          // No image on the clipboard (or reading it failed) - nothing to do.
-        });
-    },
-    true
-  );
-})();
-"#;
+mod settings;
+mod tray;
 
-#[derive(Clone)]
-struct MenuItems {
-    tray: CheckMenuItem<Wry>,
-    autostart: CheckMenuItem<Wry>,
-    autostart_hidden: CheckMenuItem<Wry>,
-}
-
-fn get_setting(app: &AppHandle, key: &str, default: bool) -> bool {
-    app.store("settings.json")
-        .ok()
-        .and_then(|store| store.get(key))
-        .and_then(|val| val.as_bool())
-        .unwrap_or(default)
-}
-
-fn set_setting(app: &AppHandle, key: &str, value: bool) {
-    if let Ok(store) = app.store("settings.json") {
-        store.set(key, value);
-        let _ = store.save();
-    }
-}
-
-fn setup_tray(app: &AppHandle) -> tauri::Result<()> {
-    let show = MenuItem::with_id(app, "show", "Show", true, None::<&str>)?;
-    let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
-    let menu = Menu::with_items(app, &[&show, &quit])?;
-
-    let icon = app.default_window_icon().unwrap().clone();
-
-    let tray_icon = TrayIconBuilder::with_id("main")
-        .icon(icon)
-        .menu(&menu)
-        .on_menu_event(|app, event| match event.id.as_ref() {
-            "show" => {
-                if let Some(w) = app.get_webview_window("main") {
-                    let _ = w.show();
-                    let _ = w.set_focus();
-                }
-            }
-            "quit" => app.exit(0),
-            _ => {}
-        })
-        .build(app)?;
-
-    let tray_enabled = get_setting(app, "tray_enabled", true);
-    let _ = tray_icon.set_visible(tray_enabled);
-
-    Ok(())
-}
-
-fn setup_menu(app: &AppHandle) -> tauri::Result<()> {
-    let tray_enabled = get_setting(app, "tray_enabled", true);
-    let autostart_enabled = get_setting(app, "autostart_enabled", true);
-    let autostart_hidden = if autostart_enabled && tray_enabled {
-        get_setting(app, "autostart_hidden", true)
-    } else {
-        false
-    };
-
-    let items = MenuItems {
-        tray: CheckMenuItem::with_id(
-            app,
-            "tray-enabled",
-            "Show tray icon",
-            true,
-            tray_enabled,
-            None::<&str>,
-        )?,
-        autostart: CheckMenuItem::with_id(
-            app,
-            "autostart-enabled",
-            "Launch on startup",
-            true,
-            autostart_enabled,
-            None::<&str>,
-        )?,
-        autostart_hidden: CheckMenuItem::with_id(
-            app,
-            "autostart-hidden",
-            "Launch hidden in tray icon on startup",
-            autostart_enabled,
-            autostart_hidden,
-            None::<&str>,
-        )?,
-    };
-
-    let menubar = Menu::new(app)?;
-    menubar.append(
-        &SubmenuBuilder::new(app, "Settings")
-            .item(&items.tray)
-            .item(&items.autostart)
-            .item(&items.autostart_hidden)
-            .build()?,
-    )?;
-    app.set_menu(menubar)?;
-
-    app.manage(items);
-
-    Ok(())
-}
-
-fn handle_menu_event(app: &AppHandle, event: tauri::menu::MenuEvent) {
-    let items = match app.try_state::<MenuItems>() {
-        Some(s) => s.inner().clone(),
-        None => return,
-    };
-
-    match event.id().as_ref() {
-        "tray-enabled" => {
-            let enable = !get_setting(app, "tray_enabled", true);
-
-            if let Some(tray) = app.tray_by_id("main") {
-                let _ = tray.set_visible(enable);
-            }
-
-            let _ = items.tray.set_checked(enable);
-            set_setting(app, "tray_enabled", enable);
-
-            if !enable {
-                let _ = items.autostart_hidden.set_checked(false);
-                set_setting(app, "autostart_hidden", false);
-            }
-        }
-        "autostart-enabled" => {
-            let manager = app.autolaunch();
-            let enable = !manager.is_enabled().unwrap_or(false);
-
-            let _ = if enable {
-                manager.enable()
-            } else {
-                manager.disable()
-            };
-
-            let _ = items.autostart.set_checked(enable);
-            let _ = items.autostart_hidden.set_enabled(enable);
-
-            if !enable {
-                let _ = items.autostart_hidden.set_checked(false);
-            }
-
-            if let Some(m) = app.menu() {
-                let _ = app.set_menu(m);
-            }
-
-            set_setting(app, "autostart_enabled", enable);
-            if !enable {
-                set_setting(app, "autostart_hidden", false);
-            }
-        }
-        "autostart-hidden" => {
-            let enable = !get_setting(app, "autostart_hidden", true);
-            let _ = items.autostart_hidden.set_checked(enable);
-
-            if enable {
-                if let Some(tray) = app.tray_by_id("main") {
-                    let _ = tray.set_visible(true);
-                    let _ = items.tray.set_checked(true);
-                    set_setting(app, "tray_enabled", true);
-                }
-            }
-
-            set_setting(app, "autostart_hidden", enable);
-        }
-        _ => {}
-    }
-}
+const CLIPBOARD_PASTE_FALLBACK_SCRIPT: &str = include_str!("clipboard_paste_fallback.js");
 
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
-            if let Some(w) = app.get_webview_window("main") {
-                let _ = w.show();
-                let _ = w.unminimize();
-                let _ = w.set_focus();
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.show();
+                let _ = window.unminimize();
+                let _ = window.set_focus();
             }
         }))
         .plugin(tauri_plugin_autostart::init(
@@ -245,15 +31,14 @@ pub fn run() {
                 WebviewUrl::External("https://web.whatsapp.com".parse().unwrap()),
             )
             .title("WhatsApp Desktop")
-            .initialization_script(CLIPBOARD_IMAGE_PASTE_FALLBACK_SCRIPT)
+            .initialization_script(CLIPBOARD_PASTE_FALLBACK_SCRIPT)
             .build()?;
 
-            setup_tray(handle)?;
-            setup_menu(handle)?;
+            tray::setup_tray(handle)?;
+            tray::setup_menu(handle)?;
+            app.on_menu_event(tray::handle_menu_event);
 
-            app.on_menu_event(handle_menu_event);
-
-            let autostart_enabled = get_setting(handle, "autostart_enabled", true);
+            let autostart_enabled = settings::get(handle, "autostart_enabled", true);
             let manager = app.autolaunch();
             let _ = if autostart_enabled {
                 manager.enable()
@@ -261,21 +46,22 @@ pub fn run() {
                 manager.disable()
             };
 
-            let is_autostart = std::env::args().any(|arg| arg == "--autostart");
-            let tray_enabled = get_setting(handle, "tray_enabled", true);
-            let autostart_hidden = get_setting(handle, "autostart_hidden", true);
+            let launched_hidden = std::env::args().any(|arg| arg == "--autostart")
+                && autostart_enabled
+                && settings::get(handle, "tray_enabled", true)
+                && settings::get(handle, "autostart_hidden", true);
 
-            if autostart_enabled && tray_enabled && autostart_hidden && is_autostart {
-                if let Some(w) = app.get_webview_window("main") {
-                    let _ = w.hide();
+            if launched_hidden {
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.hide();
                 }
             }
 
             Ok(())
         })
         .on_window_event(|window, event| {
-            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
-                if get_setting(window.app_handle(), "tray_enabled", true) {
+            if let WindowEvent::CloseRequested { api, .. } = event {
+                if settings::get(window.app_handle(), "tray_enabled", true) {
                     api.prevent_close();
                     let _ = window.hide();
                 }
