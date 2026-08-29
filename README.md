@@ -99,5 +99,4 @@ contribute to the project.
 
 ![Ensita](https://github.com/user-attachments/assets/be67cb51-5c31-4b25-bba3-196f5511631c)
 
-Development of this project is supported by [Ensita](https://www.ensita.org/),
-a non-profit organization building open-source, privacy-respecting software.
+Development of this project is supported by [Ensita](https://www.ensita.org/).
