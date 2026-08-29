@@ -1,5 +1,16 @@
 name: Build
-on: [push, pull_request, workflow_dispatch]
+on:
+  push:
+    paths-ignore:
+      - "**.md"
+      - "LICENSE"
+      - ".github/dependabot.yml"
+  pull_request:
+    paths-ignore:
+      - "**.md"
+      - "LICENSE"
+      - ".github/dependabot.yml"
+  workflow_dispatch:
 permissions:
   contents: write
 jobs:
