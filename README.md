@@ -94,3 +94,9 @@ contribute to the project.
   the releases on Arch Linux.
 - Jimil Desai ([@jimil749](https://github.com/jimil749)) for testing the
   releases on Ubuntu.
+
+## Support
+
+![Ensita](https://github.com/user-attachments/assets/be67cb51-5c31-4b25-bba3-196f5511631c)
+
+Development of this project is supported by [Ensita](https://www.ensita.org/).
