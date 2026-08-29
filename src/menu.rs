@@ -47,6 +47,7 @@ pub fn setup_menu(app: &AppHandle) -> tauri::Result<()> {
         )?,
     };
 
+    let reload = MenuItem::with_id(app, "reload", "Reload", true, Some("CmdOrCtrl+R"))?;
     let about = MenuItem::with_id(app, "about", "About", true, None::<&str>)?;
 
     let menubar = Menu::new(app)?;
@@ -57,6 +58,7 @@ pub fn setup_menu(app: &AppHandle) -> tauri::Result<()> {
             .item(&items.autostart_hidden)
             .build()?,
     )?;
+    menubar.append(&reload)?;
     menubar.append(&about)?;
     app.set_menu(menubar)?;
     app.manage(items);
@@ -123,6 +125,11 @@ pub fn handle_menu_event(app: &AppHandle, event: tauri::menu::MenuEvent) {
             }
 
             settings::set(app, "autostart_hidden", enabled);
+        }
+        "reload" => {
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.reload();
+            }
         }
         "about" => {
             let message = format!(
