@@ -1,6 +1,7 @@
 use tauri::{Manager, WebviewUrl, WebviewWindowBuilder, WindowEvent};
 use tauri_plugin_autostart::ManagerExt;
 
+mod menu;
 mod settings;
 mod tray;
 
@@ -21,6 +22,7 @@ pub fn run() {
         ))
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_clipboard_manager::init())
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_store::Builder::new().build())
         .setup(|app| {
             let handle = app.handle();
@@ -35,8 +37,8 @@ pub fn run() {
             .build()?;
 
             tray::setup_tray(handle)?;
-            tray::setup_menu(handle)?;
-            app.on_menu_event(tray::handle_menu_event);
+            menu::setup_menu(handle)?;
+            app.on_menu_event(menu::handle_menu_event);
 
             let autostart_enabled = settings::get(handle, "autostart_enabled", true);
             let manager = app.autolaunch();

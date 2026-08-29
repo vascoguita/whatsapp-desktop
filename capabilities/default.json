@@ -14,6 +14,7 @@
     "autostart:allow-disable",
     "autostart:allow-is-enabled",
     "opener:default",
+    "dialog:allow-message",
     "clipboard-manager:allow-read-image",
     "core:image:allow-rgba",
     "core:image:allow-size"
