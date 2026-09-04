@@ -27,6 +27,12 @@ pub fn run() {
         .setup(|app| {
             let handle = app.handle();
 
+            let autostart_enabled = settings::get(handle, "autostart_enabled", true);
+            let launched_hidden = std::env::args().any(|arg| arg == "--autostart")
+                && autostart_enabled
+                && settings::get(handle, "tray_enabled", true)
+                && settings::get(handle, "autostart_hidden", true);
+
             WebviewWindowBuilder::new(
                 handle,
                 "main",
@@ -34,30 +40,19 @@ pub fn run() {
             )
             .title("WhatsApp Desktop")
             .initialization_script(CLIPBOARD_PASTE_FALLBACK_SCRIPT)
+            .visible(!launched_hidden)
             .build()?;
 
             tray::setup_tray(handle)?;
             menu::setup_menu(handle)?;
             app.on_menu_event(menu::handle_menu_event);
 
-            let autostart_enabled = settings::get(handle, "autostart_enabled", true);
             let manager = app.autolaunch();
             let _ = if autostart_enabled {
                 manager.enable()
             } else {
                 manager.disable()
             };
-
-            let launched_hidden = std::env::args().any(|arg| arg == "--autostart")
-                && autostart_enabled
-                && settings::get(handle, "tray_enabled", true)
-                && settings::get(handle, "autostart_hidden", true);
-
-            if launched_hidden {
-                if let Some(window) = app.get_webview_window("main") {
-                    let _ = window.hide();
-                }
-            }
 
             Ok(())
         })
