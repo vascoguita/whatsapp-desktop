@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "report",
+  "description": "enables the permissions required by the report-an-issue window",
+  "windows": ["report"],
+  "permissions": ["core:default", "allow-submit-report"]
+}

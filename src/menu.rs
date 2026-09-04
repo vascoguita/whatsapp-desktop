@@ -5,7 +5,7 @@ use tauri::{
 use tauri_plugin_autostart::ManagerExt;
 use tauri_plugin_dialog::{DialogExt, MessageDialogKind};
 
-use crate::settings;
+use crate::{report, settings};
 
 #[derive(Clone)]
 struct MenuItems {
@@ -48,6 +48,8 @@ pub fn setup_menu(app: &AppHandle) -> tauri::Result<()> {
     };
 
     let reload = MenuItem::with_id(app, "reload", "Reload", true, Some("CmdOrCtrl+R"))?;
+    let report_issue =
+        MenuItem::with_id(app, "report-issue", "Report an Issue", true, None::<&str>)?;
     let about = MenuItem::with_id(app, "about", "About", true, None::<&str>)?;
 
     let menubar = Menu::new(app)?;
@@ -59,6 +61,7 @@ pub fn setup_menu(app: &AppHandle) -> tauri::Result<()> {
             .build()?,
     )?;
     menubar.append(&reload)?;
+    menubar.append(&report_issue)?;
     menubar.append(&about)?;
     app.set_menu(menubar)?;
     app.manage(items);
@@ -130,6 +133,9 @@ pub fn handle_menu_event(app: &AppHandle, event: tauri::menu::MenuEvent) {
             if let Some(window) = app.get_webview_window("main") {
                 let _ = window.reload();
             }
+        }
+        "report-issue" => {
+            let _ = report::open_window(app);
         }
         "about" => {
             let message = format!(

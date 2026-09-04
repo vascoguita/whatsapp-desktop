@@ -2,6 +2,9 @@
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "WhatsApp Desktop",
   "identifier": "org.guita.whatsapp-desktop",
+  "build": {
+    "frontendDist": "ui"
+  },
   "bundle": {
     "active": true,
     "targets": ["deb", "appimage", "rpm"],
