@@ -93,20 +93,26 @@
       <button id="send">Send Report</button>
     </div>
     <script>
-      var invoke = window.__TAURI_INTERNALS__.invoke;
       var sendButton = document.getElementById("send");
       var statusEl = document.getElementById("status");
 
-      sendButton.addEventListener("click", function () {
-        var description = document.getElementById("description").value;
-        sendButton.disabled = true;
-        statusEl.textContent = "Opening your mail client…";
+      function fail(error) {
+        console.error("Report an Issue:", error);
+        statusEl.textContent = "Failed to send report: " + error;
+        sendButton.disabled = false;
+        window.alert("Failed to send report: " + error);
+      }
 
-        invoke("submit_report", { description: description })
-          .catch(function (error) {
-            statusEl.textContent = "Failed to send report: " + error;
-            sendButton.disabled = false;
-          });
+      sendButton.addEventListener("click", function () {
+        try {
+          var description = document.getElementById("description").value;
+          sendButton.disabled = true;
+          statusEl.textContent = "Opening your mail client…";
+
+          window.__TAURI_INTERNALS__.invoke("submit_report", { description: description }).catch(fail);
+        } catch (error) {
+          fail(error);
+        }
       });
     </script>
   </body>
