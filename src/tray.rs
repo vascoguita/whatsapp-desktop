@@ -17,12 +17,20 @@ pub fn setup_tray(app: &AppHandle) -> tauri::Result<()> {
         .menu(&menu)
         .on_menu_event(|app, event| match event.id.as_ref() {
             "show" => {
+                log::debug!("tray: show requested");
                 if let Some(window) = app.get_webview_window("main") {
-                    let _ = window.show();
-                    let _ = window.set_focus();
+                    if let Err(err) = window.show() {
+                        log::warn!("failed to show main window: {err}");
+                    }
+                    if let Err(err) = window.set_focus() {
+                        log::warn!("failed to focus main window: {err}");
+                    }
                 }
             }
-            "quit" => app.exit(0),
+            "quit" => {
+                log::info!("quitting via tray menu");
+                app.exit(0);
+            }
             _ => {}
         })
         .build(app)?;

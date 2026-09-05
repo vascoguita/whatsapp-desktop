@@ -1,6 +1,7 @@
 use tauri::{Manager, WebviewUrl, WebviewWindowBuilder, WindowEvent};
 use tauri_plugin_autostart::ManagerExt;
 
+mod logging;
 mod menu;
 mod settings;
 mod tray;
@@ -8,12 +9,21 @@ mod tray;
 const CLIPBOARD_PASTE_FALLBACK_SCRIPT: &str = include_str!("clipboard_paste_fallback.js");
 
 pub fn run() {
+    logging::install_panic_hook();
+
     tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            log::info!("second instance launched, focusing existing window");
             if let Some(window) = app.get_webview_window("main") {
-                let _ = window.show();
-                let _ = window.unminimize();
-                let _ = window.set_focus();
+                if let Err(err) = window.show() {
+                    log::warn!("failed to show main window: {err}");
+                }
+                if let Err(err) = window.unminimize() {
+                    log::warn!("failed to unminimize main window: {err}");
+                }
+                if let Err(err) = window.set_focus() {
+                    log::warn!("failed to focus main window: {err}");
+                }
             }
         }))
         .plugin(tauri_plugin_autostart::init(
@@ -24,6 +34,7 @@ pub fn run() {
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_store::Builder::new().build())
+        .plugin(logging::plugin())
         .setup(|app| {
             let handle = app.handle();
 
@@ -33,12 +44,14 @@ pub fn run() {
                 && settings::get(handle, "tray_enabled", true)
                 && settings::get(handle, "autostart_hidden", true);
 
+            log::info!("starting up (launched_hidden={launched_hidden})");
+
             WebviewWindowBuilder::new(
                 handle,
                 "main",
                 WebviewUrl::External("https://web.whatsapp.com".parse().unwrap()),
             )
-            .title("WhatsApp Desktop")
+            .title(handle.config().product_name.clone().unwrap_or_default())
             .initialization_script(CLIPBOARD_PASTE_FALLBACK_SCRIPT)
             .visible(!launched_hidden)
             .build()?;
@@ -48,11 +61,14 @@ pub fn run() {
             app.on_menu_event(menu::handle_menu_event);
 
             let manager = app.autolaunch();
-            let _ = if autostart_enabled {
+            let result = if autostart_enabled {
                 manager.enable()
             } else {
                 manager.disable()
             };
+            if let Err(err) = result {
+                log::warn!("failed to sync autostart registration: {err}");
+            }
 
             Ok(())
         })
@@ -60,7 +76,9 @@ pub fn run() {
             if let WindowEvent::CloseRequested { api, .. } = event {
                 if settings::get(window.app_handle(), "tray_enabled", true) {
                     api.prevent_close();
-                    let _ = window.hide();
+                    if let Err(err) = window.hide() {
+                        log::warn!("failed to hide window on close: {err}");
+                    }
                 }
             }
         })
