@@ -42,7 +42,7 @@ pub fn run() {
                 "main",
                 WebviewUrl::External("https://web.whatsapp.com".parse().unwrap()),
             )
-            .title("WhatsApp Desktop")
+            .title(handle.config().product_name.clone().unwrap_or_default())
             .initialization_script(CLIPBOARD_PASTE_FALLBACK_SCRIPT)
             .visible(!launched_hidden)
             .build()?;
