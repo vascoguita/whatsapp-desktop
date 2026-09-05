@@ -19,6 +19,7 @@
             .putImageData(new ImageData(new Uint8ClampedArray(results[0]), results[1].width, results[1].height), 0, 0);
           canvas.toBlob(function (blob) {
             if (!blob) {
+              console.warn("clipboard image paste fallback: canvas.toBlob produced no blob");
               return;
             }
             var dataTransfer = new DataTransfer();
@@ -28,7 +29,9 @@
             );
           }, "image/png");
         })
-        .catch(function () {});
+        .catch(function (err) {
+          console.warn("clipboard image paste fallback failed:", err);
+        });
     },
     true
   );
