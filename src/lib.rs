@@ -1,6 +1,7 @@
 use tauri::{Manager, WebviewUrl, WebviewWindowBuilder, WindowEvent};
 use tauri_plugin_autostart::ManagerExt;
 
+mod logging;
 mod menu;
 mod settings;
 mod tray;
@@ -8,6 +9,8 @@ mod tray;
 const CLIPBOARD_PASTE_FALLBACK_SCRIPT: &str = include_str!("clipboard_paste_fallback.js");
 
 pub fn run() {
+    logging::install_panic_hook();
+
     tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             if let Some(window) = app.get_webview_window("main") {
@@ -24,6 +27,7 @@ pub fn run() {
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_store::Builder::new().build())
+        .plugin(logging::plugin())
         .setup(|app| {
             let handle = app.handle();
 
