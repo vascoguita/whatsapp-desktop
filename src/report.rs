@@ -16,12 +16,13 @@ pub fn open_window(app: &AppHandle) -> tauri::Result<()> {
         return Ok(());
     }
 
-    WebviewWindowBuilder::new(app, "report", WebviewUrl::App("report.html".into()))
+    let window = WebviewWindowBuilder::new(app, "report", WebviewUrl::App("report.html".into()))
         .title("Report an Issue")
         .inner_size(480.0, 420.0)
         .resizable(false)
         .center()
         .build()?;
+    window.remove_menu()?;
 
     Ok(())
 }
