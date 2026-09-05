@@ -67,44 +67,70 @@ pub fn setup_menu(app: &AppHandle) -> tauri::Result<()> {
 }
 
 pub fn handle_menu_event(app: &AppHandle, event: tauri::menu::MenuEvent) {
+    let id = event.id().as_ref();
+
     let Some(items) = app
         .try_state::<MenuItems>()
         .map(|state| state.inner().clone())
     else {
+        log::warn!("menu event '{id}' received before menu items were initialized");
         return;
     };
 
-    match event.id().as_ref() {
+    match id {
         "tray-enabled" => {
             let enabled = !settings::get(app, "tray_enabled", true);
+            log::info!("tray icon {}", if enabled { "enabled" } else { "disabled" });
 
             if let Some(tray) = app.tray_by_id("main") {
-                let _ = tray.set_visible(enabled);
+                if let Err(err) = tray.set_visible(enabled) {
+                    log::warn!("failed to set tray visibility: {err}");
+                }
             }
-            let _ = items.tray.set_checked(enabled);
+            if let Err(err) = items.tray.set_checked(enabled) {
+                log::warn!("failed to update tray menu checkbox: {err}");
+            }
             settings::set(app, "tray_enabled", enabled);
 
             if !enabled {
-                let _ = items.autostart_hidden.set_checked(false);
+                if let Err(err) = items.autostart_hidden.set_checked(false) {
+                    log::warn!("failed to update autostart-hidden menu checkbox: {err}");
+                }
                 settings::set(app, "autostart_hidden", false);
             }
         }
         "autostart-enabled" => {
             let manager = app.autolaunch();
             let enabled = !manager.is_enabled().unwrap_or(false);
-            let _ = if enabled {
+            log::info!(
+                "launch on startup {}",
+                if enabled { "enabled" } else { "disabled" }
+            );
+
+            let result = if enabled {
                 manager.enable()
             } else {
                 manager.disable()
             };
+            if let Err(err) = result {
+                log::warn!("failed to update autostart registration: {err}");
+            }
 
-            let _ = items.autostart.set_checked(enabled);
-            let _ = items.autostart_hidden.set_enabled(enabled);
+            if let Err(err) = items.autostart.set_checked(enabled) {
+                log::warn!("failed to update autostart menu checkbox: {err}");
+            }
+            if let Err(err) = items.autostart_hidden.set_enabled(enabled) {
+                log::warn!("failed to update autostart-hidden menu item: {err}");
+            }
             if !enabled {
-                let _ = items.autostart_hidden.set_checked(false);
+                if let Err(err) = items.autostart_hidden.set_checked(false) {
+                    log::warn!("failed to update autostart-hidden menu checkbox: {err}");
+                }
             }
             if let Some(menu) = app.menu() {
-                let _ = app.set_menu(menu);
+                if let Err(err) = app.set_menu(menu) {
+                    log::warn!("failed to refresh menu: {err}");
+                }
             }
 
             settings::set(app, "autostart_enabled", enabled);
@@ -114,12 +140,22 @@ pub fn handle_menu_event(app: &AppHandle, event: tauri::menu::MenuEvent) {
         }
         "autostart-hidden" => {
             let enabled = !settings::get(app, "autostart_hidden", true);
-            let _ = items.autostart_hidden.set_checked(enabled);
+            log::info!(
+                "launch hidden in tray {}",
+                if enabled { "enabled" } else { "disabled" }
+            );
+            if let Err(err) = items.autostart_hidden.set_checked(enabled) {
+                log::warn!("failed to update autostart-hidden menu checkbox: {err}");
+            }
 
             if enabled {
                 if let Some(tray) = app.tray_by_id("main") {
-                    let _ = tray.set_visible(true);
-                    let _ = items.tray.set_checked(true);
+                    if let Err(err) = tray.set_visible(true) {
+                        log::warn!("failed to set tray visibility: {err}");
+                    }
+                    if let Err(err) = items.tray.set_checked(true) {
+                        log::warn!("failed to update tray menu checkbox: {err}");
+                    }
                     settings::set(app, "tray_enabled", true);
                 }
             }
@@ -127,11 +163,15 @@ pub fn handle_menu_event(app: &AppHandle, event: tauri::menu::MenuEvent) {
             settings::set(app, "autostart_hidden", enabled);
         }
         "reload" => {
+            log::info!("reloading main window");
             if let Some(window) = app.get_webview_window("main") {
-                let _ = window.reload();
+                if let Err(err) = window.reload() {
+                    log::warn!("failed to reload main window: {err}");
+                }
             }
         }
         "about" => {
+            log::debug!("showing about dialog");
             let message = format!(
                 "{description}\n\nVersion: {version}\nAuthor: {authors}\nLicense: {license}\nRepository: {repository}",
                 description = env!("CARGO_PKG_DESCRIPTION"),
