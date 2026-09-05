@@ -13,10 +13,17 @@ pub fn run() {
 
     tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            log::info!("second instance launched, focusing existing window");
             if let Some(window) = app.get_webview_window("main") {
-                let _ = window.show();
-                let _ = window.unminimize();
-                let _ = window.set_focus();
+                if let Err(err) = window.show() {
+                    log::warn!("failed to show main window: {err}");
+                }
+                if let Err(err) = window.unminimize() {
+                    log::warn!("failed to unminimize main window: {err}");
+                }
+                if let Err(err) = window.set_focus() {
+                    log::warn!("failed to focus main window: {err}");
+                }
             }
         }))
         .plugin(tauri_plugin_autostart::init(
@@ -37,6 +44,8 @@ pub fn run() {
                 && settings::get(handle, "tray_enabled", true)
                 && settings::get(handle, "autostart_hidden", true);
 
+            log::info!("starting up (launched_hidden={launched_hidden})");
+
             WebviewWindowBuilder::new(
                 handle,
                 "main",
@@ -52,11 +61,14 @@ pub fn run() {
             app.on_menu_event(menu::handle_menu_event);
 
             let manager = app.autolaunch();
-            let _ = if autostart_enabled {
+            let result = if autostart_enabled {
                 manager.enable()
             } else {
                 manager.disable()
             };
+            if let Err(err) = result {
+                log::warn!("failed to sync autostart registration: {err}");
+            }
 
             Ok(())
         })
@@ -64,7 +76,9 @@ pub fn run() {
             if let WindowEvent::CloseRequested { api, .. } = event {
                 if settings::get(window.app_handle(), "tray_enabled", true) {
                     api.prevent_close();
-                    let _ = window.hide();
+                    if let Err(err) = window.hide() {
+                        log::warn!("failed to hide window on close: {err}");
+                    }
                 }
             }
         })
