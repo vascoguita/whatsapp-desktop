@@ -7,6 +7,7 @@ mod settings;
 mod tray;
 
 const CLIPBOARD_PASTE_FALLBACK_SCRIPT: &str = include_str!("clipboard_paste_fallback.js");
+const WEBVIEW_CONSOLE_LOGGER_SCRIPT: &str = include_str!("webview_console_logger.js");
 
 pub fn run() {
     logging::install_panic_hook();
@@ -53,6 +54,7 @@ pub fn run() {
             )
             .title(handle.config().product_name.clone().unwrap_or_default())
             .initialization_script(CLIPBOARD_PASTE_FALLBACK_SCRIPT)
+            .initialization_script(WEBVIEW_CONSOLE_LOGGER_SCRIPT)
             .visible(!launched_hidden)
             .build()?;
 
@@ -84,5 +86,9 @@ pub fn run() {
         })
         .build(tauri::generate_context!())
         .expect("error while running tauri application")
-        .run(|_app_handle, _event| {});
+        .run(|_app_handle, event| {
+            if let tauri::RunEvent::Exit = event {
+                log::info!("shutting down");
+            }
+        });
 }
