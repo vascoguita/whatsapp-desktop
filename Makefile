@@ -20,7 +20,7 @@ dev:
 .PHONY: fmt
 fmt:
 	cargo fmt --all -- --check
-	$(BIOME) format --indent-style=space --indent-width=2 src
+	$(BIOME) format src
 
 .PHONY: lint
 lint:

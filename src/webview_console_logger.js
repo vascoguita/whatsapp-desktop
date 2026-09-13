@@ -1,49 +1,49 @@
 (() => {
-  var invoke = window.__TAURI_INTERNALS__.invoke;
-  var LEVELS = { warn: 4, error: 5 };
+	var invoke = window.__TAURI_INTERNALS__.invoke;
+	var LEVELS = { warn: 4, error: 5 };
 
-  function stringify(arg) {
-    if (typeof arg === "string") {
-      return arg;
-    }
-    if (arg instanceof Error) {
-      return arg.stack || arg.message;
-    }
-    if (typeof arg !== "object" || arg === null) {
-      return String(arg);
-    }
-    try {
-      return JSON.stringify(arg, null, 2);
-    } catch {
-      return String(arg);
-    }
-  }
+	function stringify(arg) {
+		if (typeof arg === "string") {
+			return arg;
+		}
+		if (arg instanceof Error) {
+			return arg.stack || arg.message;
+		}
+		if (typeof arg !== "object" || arg === null) {
+			return String(arg);
+		}
+		try {
+			return JSON.stringify(arg, null, 2);
+		} catch {
+			return String(arg);
+		}
+	}
 
-  function forward(level, message) {
-    invoke("plugin:log|log", { level: level, message: message }).catch(
-      () => {},
-    );
-  }
+	function forward(level, message) {
+		invoke("plugin:log|log", { level: level, message: message }).catch(
+			() => {},
+		);
+	}
 
-  Object.keys(LEVELS).forEach((method) => {
-    var original = console[method];
-    console[method] = (...args) => {
-      original.apply(console, args);
-      forward(LEVELS[method], args.map(stringify).join(" "));
-    };
-  });
+	Object.keys(LEVELS).forEach((method) => {
+		var original = console[method];
+		console[method] = (...args) => {
+			original.apply(console, args);
+			forward(LEVELS[method], args.map(stringify).join(" "));
+		};
+	});
 
-  window.addEventListener("error", (event) => {
-    var message = event.error
-      ? stringify(event.error)
-      : event.message || "unknown error";
-    forward(LEVELS.error, `uncaught exception: ${message}`);
-  });
+	window.addEventListener("error", (event) => {
+		var message = event.error
+			? stringify(event.error)
+			: event.message || "unknown error";
+		forward(LEVELS.error, `uncaught exception: ${message}`);
+	});
 
-  window.addEventListener("unhandledrejection", (event) => {
-    forward(
-      LEVELS.error,
-      `unhandled promise rejection: ${stringify(event.reason)}`,
-    );
-  });
+	window.addEventListener("unhandledrejection", (event) => {
+		forward(
+			LEVELS.error,
+			`unhandled promise rejection: ${stringify(event.reason)}`,
+		);
+	});
 })();
