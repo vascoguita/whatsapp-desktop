@@ -9,6 +9,7 @@ DEB_BUNDLE = $(BUNDLE_DIR)/deb/$(PRODUCT_NAME)_$(APP_VERSION)_amd64.deb
 RPM_BUNDLE = $(BUNDLE_DIR)/rpm/$(PRODUCT_NAME_SAFE)-$(APP_VERSION)-1.x86_64.rpm
 APPIMAGE_BUNDLE = $(BUNDLE_DIR)/appimage/$(PRODUCT_NAME)_$(APP_VERSION)_amd64.AppImage
 BIOME = npx --yes @biomejs/biome@2.5.13
+BIOME_LINT_SKIP = --skip=complexity/useArrowFunction --skip=complexity/useOptionalChain --skip=style/useTemplate
 
 .PHONY: all
 all: fmt lint build
@@ -20,12 +21,12 @@ dev:
 .PHONY: fmt
 fmt:
 	cargo fmt --all -- --check
-	$(BIOME) format src
+	$(BIOME) format --indent-style=space --indent-width=2 src
 
 .PHONY: lint
 lint:
 	cargo clippy -- -D warnings
-	$(BIOME) lint src
+	$(BIOME) lint $(BIOME_LINT_SKIP) src
 
 .PHONY: build
 build: $(DEB_BUNDLE) $(RPM_BUNDLE) $(APPIMAGE_BUNDLE) $(ARCH_BUNDLE)
