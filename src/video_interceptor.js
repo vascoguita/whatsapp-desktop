@@ -96,13 +96,39 @@
     return promise;
   }
 
+  function withTimeout(promise, ms, onTimeout) {
+    return new Promise(function (resolve, reject) {
+      var timer = setTimeout(function () {
+        onTimeout();
+        reject(new Error("timed out after " + ms + "ms"));
+      }, ms);
+      promise.then(
+        function (result) {
+          clearTimeout(timer);
+          resolve(result);
+        },
+        function (err) {
+          clearTimeout(timer);
+          reject(err);
+        }
+      );
+    });
+  }
+
   function extract(video, src) {
     var blob = blobRegistry.get(src);
     var started = Date.now();
-    var promise = blob ? blobToDataURL(blob) : fetchToDataURL(src);
+    var promise;
 
     if (blob) {
       log("extracting via captured blob", src);
+      promise = withTimeout(blobToDataURL(blob), 5000, function () {
+        log("blob read stalled (likely revoked mid-read), falling back to fetch", src);
+      }).catch(function () {
+        return fetchToDataURL(src);
+      });
+    } else {
+      promise = fetchToDataURL(src);
     }
 
     promise.then(
