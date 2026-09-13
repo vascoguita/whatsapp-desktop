@@ -11,7 +11,7 @@ APPIMAGE_BUNDLE = $(BUNDLE_DIR)/appimage/$(PRODUCT_NAME)_$(APP_VERSION)_amd64.Ap
 BIOME = npx --yes @biomejs/biome@2.5.13
 
 .PHONY: all
-all: fmt clippy build
+all: fmt lint build
 
 .PHONY: dev
 dev:
@@ -22,8 +22,8 @@ fmt:
 	cargo fmt --all -- --check
 	$(BIOME) format src
 
-.PHONY: clippy
-clippy:
+.PHONY: lint
+lint:
 	cargo clippy -- -D warnings
 	$(BIOME) lint src
 
