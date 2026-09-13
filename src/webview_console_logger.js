@@ -1,4 +1,4 @@
-(function () {
+(() => {
   var invoke = window.__TAURI_INTERNALS__.invoke;
   var LEVELS = { warn: 4, error: 5 };
 
@@ -21,29 +21,29 @@
 
   function forward(level, message) {
     invoke("plugin:log|log", { level: level, message: message }).catch(
-      function () {},
+      () => {},
     );
   }
 
-  Object.keys(LEVELS).forEach(function (method) {
+  Object.keys(LEVELS).forEach((method) => {
     var original = console[method];
-    console[method] = function (...args) {
+    console[method] = (...args) => {
       original.apply(console, args);
       forward(LEVELS[method], args.map(stringify).join(" "));
     };
   });
 
-  window.addEventListener("error", function (event) {
+  window.addEventListener("error", (event) => {
     var message = event.error
       ? stringify(event.error)
       : event.message || "unknown error";
-    forward(LEVELS.error, "uncaught exception: " + message);
+    forward(LEVELS.error, `uncaught exception: ${message}`);
   });
 
-  window.addEventListener("unhandledrejection", function (event) {
+  window.addEventListener("unhandledrejection", (event) => {
     forward(
       LEVELS.error,
-      "unhandled promise rejection: " + stringify(event.reason),
+      `unhandled promise rejection: ${stringify(event.reason)}`,
     );
   });
 })();

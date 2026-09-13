@@ -1,4 +1,4 @@
-(function () {
+(() => {
   var TAG = "[video-interceptor]";
   var log = console.log.bind(console, TAG);
 
@@ -6,19 +6,19 @@
   var realRevokeObjectURL = URL.revokeObjectURL.bind(URL);
   var blobRegistry = new Map();
 
-  URL.createObjectURL = function (obj) {
+  URL.createObjectURL = (obj) => {
     var url = realCreateObjectURL(obj);
     if (
       obj instanceof Blob &&
       (!obj.type || obj.type.indexOf("video/") === 0)
     ) {
       blobRegistry.set(url, obj);
-      log("captured blob", url, obj.type || "(no type)", obj.size + "b");
+      log("captured blob", url, obj.type || "(no type)", `${obj.size}b`);
     }
     return url;
   };
 
-  URL.revokeObjectURL = function (url) {
+  URL.revokeObjectURL = (url) => {
     if (blobRegistry.delete(url)) {
       log("revoked blob", url);
     }
@@ -53,27 +53,27 @@
       }
       el.style.display = "flex";
       var rect = video.getBoundingClientRect();
-      el.style.left = rect.left + "px";
-      el.style.top = rect.top + "px";
-      el.style.width = rect.width + "px";
-      el.style.height = rect.height + "px";
+      el.style.left = `${rect.left}px`;
+      el.style.top = `${rect.top}px`;
+      el.style.width = `${rect.width}px`;
+      el.style.height = `${rect.height}px`;
     }
     place();
     var id = setInterval(place, 150);
 
-    return function () {
+    return () => {
       clearInterval(id);
       el.remove();
     };
   }
 
   function blobToDataURL(blob) {
-    return new Promise(function (resolve, reject) {
+    return new Promise((resolve, reject) => {
       var reader = new FileReader();
-      reader.onload = function () {
+      reader.onload = () => {
         resolve(reader.result);
       };
-      reader.onerror = function () {
+      reader.onerror = () => {
         reject(reader.error);
       };
       reader.readAsDataURL(blob);
@@ -83,15 +83,13 @@
   function fetchToDataURL(src) {
     log("extracting via fetch (blob not captured)", src);
     var controller = new AbortController();
-    var timer = setTimeout(function () {
+    var timer = setTimeout(() => {
       log("fetch timed out, aborting", src);
       controller.abort();
     }, 10000);
 
     var promise = fetch(src, { signal: controller.signal })
-      .then(function (response) {
-        return response.blob();
-      })
+      .then((response) => response.blob())
       .then(blobToDataURL);
 
     function clearTimer() {
@@ -137,10 +135,10 @@
     }
 
     promise.then(
-      function () {
-        log("extraction succeeded", src, Date.now() - started + "ms");
+      () => {
+        log("extraction succeeded", src, `${Date.now() - started}ms`);
       },
-      function (err) {
+      (err) => {
         log("extraction failed", src, err);
       },
     );
@@ -176,13 +174,13 @@
     var hide = overlay(video);
 
     return promise
-      .then(function (dataUrl) {
+      .then((dataUrl) => {
         video.src = dataUrl;
         video.load();
         extractions.delete(video);
         log("swapped to data URL, native play proceeding", src);
       })
-      .catch(function (err) {
+      .catch((err) => {
         log("swap failed, falling back to native blob playback", src, err);
       })
       .then(hide);
@@ -190,14 +188,11 @@
 
   var nativePlay = HTMLMediaElement.prototype.play;
   HTMLMediaElement.prototype.play = function () {
-    var video = this;
-    if (video.tagName !== "VIDEO") {
-      return nativePlay.call(video);
+    if (this.tagName !== "VIDEO") {
+      return nativePlay.call(this);
     }
-    log("play() called", video.currentSrc || video.src, video);
-    return swap(video).then(function () {
-      return nativePlay.call(video);
-    });
+    log("play() called", this.currentSrc || this.src, this);
+    return swap(this).then(() => nativePlay.call(this));
   };
 
   function attach(video) {
@@ -209,7 +204,7 @@
 
     video.addEventListener(
       "loadstart",
-      function () {
+      () => {
         var src = blobSrc(video);
         if (src) {
           log("loadstart, prefetching extraction", src);
@@ -229,9 +224,9 @@
     }
   }
 
-  new MutationObserver(function (mutations) {
-    mutations.forEach(function (mutation) {
-      mutation.addedNodes.forEach(function (node) {
+  new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      mutation.addedNodes.forEach((node) => {
         if (node.nodeType === 1) {
           scan(node);
         }
@@ -239,7 +234,7 @@
     });
   }).observe(document.documentElement, { childList: true, subtree: true });
 
-  document.addEventListener("DOMContentLoaded", function () {
+  document.addEventListener("DOMContentLoaded", () => {
     scan(document.documentElement);
   });
 

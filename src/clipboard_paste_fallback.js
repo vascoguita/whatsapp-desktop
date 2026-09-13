@@ -1,23 +1,19 @@
-(function () {
+(() => {
   document.addEventListener(
     "paste",
-    function (event) {
-      if (
-        event.clipboardData &&
-        event.clipboardData.items &&
-        event.clipboardData.items.length > 0
-      ) {
+    (event) => {
+      if (event.clipboardData?.items && event.clipboardData.items.length > 0) {
         return;
       }
       var invoke = window.__TAURI_INTERNALS__.invoke;
       invoke("plugin:clipboard-manager|read_image")
-        .then(function (rid) {
-          return Promise.all([
+        .then((rid) =>
+          Promise.all([
             invoke("plugin:image|rgba", { rid: rid }),
             invoke("plugin:image|size", { rid: rid }),
-          ]);
-        })
-        .then(function (results) {
+          ]),
+        )
+        .then((results) => {
           var canvas = document.createElement("canvas");
           canvas.width = results[1].width;
           canvas.height = results[1].height;
@@ -32,7 +28,7 @@
               0,
               0,
             );
-          canvas.toBlob(function (blob) {
+          canvas.toBlob((blob) => {
             if (!blob) {
               console.warn(
                 "clipboard image paste fallback: canvas.toBlob produced no blob",
@@ -56,7 +52,7 @@
             );
           }, "image/png");
         })
-        .catch(function (err) {
+        .catch((err) => {
           console.warn("clipboard image paste fallback failed:", err);
         });
     },
