@@ -100,20 +100,20 @@
   }
 
   function withTimeout(promise, ms, onTimeout) {
-    return new Promise(function (resolve, reject) {
-      var timer = setTimeout(function () {
+    return new Promise((resolve, reject) => {
+      var timer = setTimeout(() => {
         onTimeout();
-        reject(new Error("timed out after " + ms + "ms"));
+        reject(new Error(`timed out after ${ms}ms`));
       }, ms);
       promise.then(
-        function (result) {
+        (result) => {
           clearTimeout(timer);
           resolve(result);
         },
-        function (err) {
+        (err) => {
           clearTimeout(timer);
           reject(err);
-        }
+        },
       );
     });
   }
@@ -125,11 +125,12 @@
 
     if (blob) {
       log("extracting via captured blob", src);
-      promise = withTimeout(blobToDataURL(blob), 5000, function () {
-        log("blob read stalled (likely revoked mid-read), falling back to fetch", src);
-      }).catch(function () {
-        return fetchToDataURL(src);
-      });
+      promise = withTimeout(blobToDataURL(blob), 5000, () => {
+        log(
+          "blob read stalled (likely revoked mid-read), falling back to fetch",
+          src,
+        );
+      }).catch(() => fetchToDataURL(src));
     } else {
       promise = fetchToDataURL(src);
     }
