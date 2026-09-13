@@ -8,9 +8,10 @@ ARCH_BUNDLE = $(ARCH_DIR).pkg.tar.zst
 DEB_BUNDLE = $(BUNDLE_DIR)/deb/$(PRODUCT_NAME)_$(APP_VERSION)_amd64.deb
 RPM_BUNDLE = $(BUNDLE_DIR)/rpm/$(PRODUCT_NAME_SAFE)-$(APP_VERSION)-1.x86_64.rpm
 APPIMAGE_BUNDLE = $(BUNDLE_DIR)/appimage/$(PRODUCT_NAME)_$(APP_VERSION)_amd64.AppImage
+BIOME = npx --yes @biomejs/biome@2.5.13
 
 .PHONY: all
-all: fmt clippy build
+all: fmt lint build
 
 .PHONY: dev
 dev:
@@ -19,10 +20,12 @@ dev:
 .PHONY: fmt
 fmt:
 	cargo fmt --all -- --check
+	$(BIOME) format src
 
-.PHONY: clippy
-clippy:
+.PHONY: lint
+lint:
 	cargo clippy -- -D warnings
+	$(BIOME) lint src
 
 .PHONY: build
 build: $(DEB_BUNDLE) $(RPM_BUNDLE) $(APPIMAGE_BUNDLE) $(ARCH_BUNDLE)
