@@ -1,4 +1,27 @@
 (function () {
+  var TAG = "[video-interceptor]";
+  var log = console.log.bind(console, TAG);
+
+  var realCreateObjectURL = URL.createObjectURL.bind(URL);
+  var realRevokeObjectURL = URL.revokeObjectURL.bind(URL);
+  var blobRegistry = new Map();
+
+  URL.createObjectURL = function (obj) {
+    var url = realCreateObjectURL(obj);
+    if (obj instanceof Blob && (!obj.type || obj.type.indexOf("video/") === 0)) {
+      blobRegistry.set(url, obj);
+      log("captured blob", url, obj.type || "(no type)", obj.size + "b");
+    }
+    return url;
+  };
+
+  URL.revokeObjectURL = function (url) {
+    if (blobRegistry.delete(url)) {
+      log("revoked blob", url);
+    }
+    return realRevokeObjectURL(url);
+  };
+
   var extractions = new WeakMap();
 
   function overlay(video) {
@@ -39,9 +62,24 @@
     };
   }
 
-  function extract(video, src) {
+  function blobToDataURL(blob) {
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function () {
+        resolve(reader.result);
+      };
+      reader.onerror = function () {
+        reject(reader.error);
+      };
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  function fetchToDataURL(src) {
+    log("extracting via fetch (blob not captured)", src);
     var controller = new AbortController();
     var timer = setTimeout(function () {
+      log("fetch timed out, aborting", src);
       controller.abort();
     }, 10000);
 
@@ -49,24 +87,32 @@
       .then(function (response) {
         return response.blob();
       })
-      .then(function (blob) {
-        return new Promise(function (resolve, reject) {
-          var reader = new FileReader();
-          reader.onload = function () {
-            resolve(reader.result);
-          };
-          reader.onerror = function () {
-            reject(reader.error);
-          };
-          reader.readAsDataURL(blob);
-        });
-      });
+      .then(blobToDataURL);
 
     function clearTimer() {
       clearTimeout(timer);
     }
     promise.then(clearTimer, clearTimer);
-    promise.catch(function () {});
+    return promise;
+  }
+
+  function extract(video, src) {
+    var blob = blobRegistry.get(src);
+    var started = Date.now();
+    var promise = blob ? blobToDataURL(blob) : fetchToDataURL(src);
+
+    if (blob) {
+      log("extracting via captured blob", src);
+    }
+
+    promise.then(
+      function () {
+        log("extraction succeeded", src, Date.now() - started + "ms");
+      },
+      function (err) {
+        log("extraction failed", src, err);
+      }
+    );
 
     extractions.set(video, { src: src, promise: promise });
     return promise;
@@ -74,7 +120,7 @@
 
   function blobSrc(video) {
     var src = video.currentSrc || video.src;
-    return src && src.indexOf("blob:") === 0 && !video.autoplay ? src : null;
+    return src && src.indexOf("blob:") === 0 ? src : null;
   }
 
   function ensureExtraction(video, src) {
@@ -85,9 +131,11 @@
   function swap(video) {
     var src = blobSrc(video);
     if (!src) {
+      log("nothing to swap, proceeding to native play", video.currentSrc || video.src);
       return Promise.resolve();
     }
 
+    log("swapping before play", src);
     var promise = ensureExtraction(video, src);
     var hide = overlay(video);
 
@@ -96,9 +144,10 @@
         video.src = dataUrl;
         video.load();
         extractions.delete(video);
+        log("swapped to data URL, native play proceeding", src);
       })
       .catch(function (err) {
-        console.warn("video interception failed:", err);
+        log("swap failed, falling back to native blob playback", src, err);
       })
       .then(hide);
   }
@@ -109,6 +158,7 @@
     if (video.tagName !== "VIDEO") {
       return nativePlay.call(video);
     }
+    log("play() called", video.currentSrc || video.src, video);
     return swap(video).then(function () {
       return nativePlay.call(video);
     });
@@ -119,12 +169,14 @@
       return;
     }
     video.__videoInterceptorAttached = true;
+    log("attached to video element", video);
 
     video.addEventListener(
       "loadstart",
       function () {
         var src = blobSrc(video);
         if (src) {
+          log("loadstart, prefetching extraction", src);
           ensureExtraction(video, src);
         }
       },
@@ -154,4 +206,6 @@
   document.addEventListener("DOMContentLoaded", function () {
     scan(document.documentElement);
   });
+
+  log("initialized");
 })();
