@@ -10,7 +10,22 @@ RPM_BUNDLE = $(BUNDLE_DIR)/rpm/$(PRODUCT_NAME_SAFE)-$(APP_VERSION)-1.x86_64.rpm
 APPIMAGE_BUNDLE = $(BUNDLE_DIR)/appimage/$(PRODUCT_NAME)_$(APP_VERSION)_amd64.AppImage
 
 .PHONY: all
-all: $(DEB_BUNDLE) $(RPM_BUNDLE) $(APPIMAGE_BUNDLE) $(ARCH_BUNDLE)
+all: fmt clippy build
+
+.PHONY: dev
+dev:
+	cargo tauri dev
+
+.PHONY: fmt
+fmt:
+	cargo fmt --all -- --check
+
+.PHONY: clippy
+clippy:
+	cargo clippy -- -D warnings
+
+.PHONY: build
+build: $(DEB_BUNDLE) $(RPM_BUNDLE) $(APPIMAGE_BUNDLE) $(ARCH_BUNDLE)
 
 $(DEB_BUNDLE):
 	cargo tauri build --bundles deb
