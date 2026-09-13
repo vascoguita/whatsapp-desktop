@@ -8,7 +8,10 @@
 
   URL.createObjectURL = function (obj) {
     var url = realCreateObjectURL(obj);
-    if (obj instanceof Blob && (!obj.type || obj.type.indexOf("video/") === 0)) {
+    if (
+      obj instanceof Blob &&
+      (!obj.type || obj.type.indexOf("video/") === 0)
+    ) {
       blobRegistry.set(url, obj);
       log("captured blob", url, obj.type || "(no type)", obj.size + "b");
     }
@@ -25,10 +28,12 @@
   var extractions = new WeakMap();
 
   function overlay(video) {
+    var style;
     if (!document.getElementById("video-interceptor-style")) {
-      var style = document.createElement("style");
+      style = document.createElement("style");
       style.id = "video-interceptor-style";
-      style.textContent = "@keyframes video-interceptor-spin{to{transform:rotate(360deg)}}";
+      style.textContent =
+        "@keyframes video-interceptor-spin{to{transform:rotate(360deg)}}";
       document.head.appendChild(style);
     }
 
@@ -137,7 +142,7 @@
       },
       function (err) {
         log("extraction failed", src, err);
-      }
+      },
     );
 
     extractions.set(video, { src: src, promise: promise });
@@ -151,13 +156,18 @@
 
   function ensureExtraction(video, src) {
     var existing = extractions.get(video);
-    return existing && existing.src === src ? existing.promise : extract(video, src);
+    return existing && existing.src === src
+      ? existing.promise
+      : extract(video, src);
   }
 
   function swap(video) {
     var src = blobSrc(video);
     if (!src) {
-      log("nothing to swap, proceeding to native play", video.currentSrc || video.src);
+      log(
+        "nothing to swap, proceeding to native play",
+        video.currentSrc || video.src,
+      );
       return Promise.resolve();
     }
 
@@ -206,7 +216,7 @@
           ensureExtraction(video, src);
         }
       },
-      true
+      true,
     );
   }
 

@@ -14,13 +14,15 @@
     }
     try {
       return JSON.stringify(arg, null, 2);
-    } catch (e) {
+    } catch {
       return String(arg);
     }
   }
 
   function forward(level, message) {
-    invoke("plugin:log|log", { level: level, message: message }).catch(function () {});
+    invoke("plugin:log|log", { level: level, message: message }).catch(
+      function () {},
+    );
   }
 
   Object.keys(LEVELS).forEach(function (method) {
@@ -32,11 +34,16 @@
   });
 
   window.addEventListener("error", function (event) {
-    var message = event.error ? stringify(event.error) : event.message || "unknown error";
+    var message = event.error
+      ? stringify(event.error)
+      : event.message || "unknown error";
     forward(LEVELS.error, "uncaught exception: " + message);
   });
 
   window.addEventListener("unhandledrejection", function (event) {
-    forward(LEVELS.error, "unhandled promise rejection: " + stringify(event.reason));
+    forward(
+      LEVELS.error,
+      "unhandled promise rejection: " + stringify(event.reason),
+    );
   });
 })();
