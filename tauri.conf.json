@@ -15,7 +15,8 @@
           "gstreamer1.0-plugins-good",
           "gstreamer1.0-plugins-bad",
           "gstreamer1.0-plugins-ugly",
-          "gstreamer1.0-libav"
+          "gstreamer1.0-libav",
+          "gstreamer1.0-nice"
         ]
       },
       "rpm": {
@@ -26,7 +27,8 @@
           "gstreamer1-plugins-good",
           "gstreamer1-plugins-bad-free",
           "gstreamer1-plugins-ugly-free",
-          "gstreamer1-libav"
+          "gstreamer1-libav",
+          "libnice-gstreamer1"
         ]
       },
       "appimage": {

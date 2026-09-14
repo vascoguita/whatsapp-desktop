@@ -2,6 +2,7 @@ use tauri::{Manager, WebviewUrl, WebviewWindowBuilder, WindowEvent};
 use tauri_plugin_autostart::ManagerExt;
 
 mod logging;
+mod media_permissions;
 mod menu;
 mod settings;
 mod tray;
@@ -48,7 +49,7 @@ pub fn run() {
 
             log::info!("starting up (launched_hidden={launched_hidden})");
 
-            WebviewWindowBuilder::new(
+            let window = WebviewWindowBuilder::new(
                 handle,
                 "main",
                 WebviewUrl::External("https://web.whatsapp.com".parse().unwrap()),
@@ -59,6 +60,10 @@ pub fn run() {
             .initialization_script(VIDEO_INTERCEPTOR_SCRIPT)
             .visible(!launched_hidden)
             .build()?;
+
+            if let Err(err) = media_permissions::setup(&window) {
+                log::warn!("failed to set up camera/microphone permission handling: {err}");
+            }
 
             tray::setup_tray(handle)?;
             menu::setup_menu(handle)?;
